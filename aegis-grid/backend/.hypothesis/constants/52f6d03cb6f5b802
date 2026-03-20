@@ -1,0 +1,4 @@
+# file: /app/aegis-grid/backend/main/infrastructure/circuit_breaker.py
+# hypothesis_version: 6.151.9
+
+[0.0, 30.0, 'failures', 'last_failure_time', 'open']

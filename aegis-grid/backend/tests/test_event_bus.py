@@ -1,6 +1,7 @@
 import pytest
 import asyncio
-from main.core.event_bus import event_bus
+from main.infrastructure.event_bus import event_bus
+
 @pytest.mark.asyncio
 async def test_event_bus_publish_subscribe():
     test_result = []
