@@ -1,28 +1,18 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import DeckGL from '@deck.gl/react';
-import { ScatterplotLayer, PathLayer, PolygonLayer, TextLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import { Map } from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import { useStore } from '../store';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-
-const INITIAL_VIEW_STATE = { longitude: 0, latitude: 0, zoom: 10, pitch: 45, bearing: 0 };
+const INITIAL_VIEW_STATE = { longitude: 0, latitude: 0, zoom: 4, pitch: 45, bearing: 0 };
 
 export default function TacticalMap() {
   const units = useStore(state => state.units);
   const alerts = useStore(state => state.alerts);
   const gpsJammed = useStore(state => state.gpsJammed);
-
-  // Interpolation state
-  const [interpolatedUnits, setInterpolatedUnits] = useState([]);
-
-  useEffect(() => {
-    // A mock linear interpolation worker would be implemented here.
-    // Setting directly to simulate real-time updates for now.
-    setInterpolatedUnits(units);
-  }, [units]);
 
   const getUnitColor = (type) => {
     switch (type) {
@@ -45,7 +35,7 @@ export default function TacticalMap() {
     }),
     new ScatterplotLayer({
       id: 'units-layer',
-      data: interpolatedUnits,
+      data: units,
       pickable: true,
       opacity: 0.8,
       stroked: true,
@@ -60,7 +50,7 @@ export default function TacticalMap() {
     }),
     new ScatterplotLayer({
         id: 'uncertainty-layer',
-        data: gpsJammed ? interpolatedUnits : [],
+        data: gpsJammed ? units : [],
         pickable: false,
         opacity: 0.3,
         stroked: true,
@@ -72,7 +62,7 @@ export default function TacticalMap() {
     }),
     new TextLayer({
         id: 'text-layer',
-        data: interpolatedUnits,
+        data: units,
         getPosition: d => [d.lon, d.lat],
         getText: d => d.id.substring(0, 4),
         getSize: 12,

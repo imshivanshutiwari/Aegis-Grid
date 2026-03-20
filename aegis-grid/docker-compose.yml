@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aegis_backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgis:5432/aegis
+      - QDRANT_URL=http://qdrant:6333
+      - OLLAMA_URL=http://ollama:11434
+      - JWT_SECRET=supersecretdefensekey_change_in_prod
+      - ENVIRONMENT=development
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgis
+      - qdrant
+    networks:
+      - aegis_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aegis_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - aegis_net
+
+  postgis:
+    image: postgis/postgis:15-3.3
+    container_name: aegis_postgis
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=aegis
+    ports:
+      - "5432:5432"
+    networks:
+      - aegis_net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: aegis_qdrant
+    ports:
+      - "6333:6333"
+    networks:
+      - aegis_net
+
+networks:
+  aegis_net:
+    driver: bridge
