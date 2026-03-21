@@ -5,7 +5,7 @@
 <h1 align="center">⚔️ AEGIS-GRID: TACTICAL INTELLIGENCE ENGINE ⚔️</h1>
 
 <p align="center">
-  <strong>A High-Fidelity Beyond Visual Range (BVR) Combat & Tactical AI Evaluation Environment</strong>
+  <strong>A High-Fidelity Tactical Command & Control (C2) Dashboard & Multi-Agent Evaluation Environment - Indian Ocean Theater</strong>
 </p>
 
 <p align="center">
@@ -129,7 +129,7 @@ Aegis-Grid simulates modern Electronic Warfare (EW) through a dynamic **GPS Jamm
     - `npm run dev`
 
 ### 🔵 WORKFLOW 2: TACTICAL THREAT RESPONSE (HITL)
-1.  **Detection**: A red hostile dot appears on the Taiwan Strait map.
+1.  **Detection**: A red hostile dot appears on the Indian Ocean / Andaman Sea map.
 2.  **Alert Generation**: The `CRITICAL THREATS` panel flashes red with ID and type.
 3.  **Agent Reasoning**: The `AGENT REASONING LOGS` scroll with step-by-step logic (e.g., "Scanning ROE Database...").
 4.  **HITL Intervention**:

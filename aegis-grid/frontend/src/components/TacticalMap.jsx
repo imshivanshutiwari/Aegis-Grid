@@ -7,7 +7,7 @@ import maplibregl from 'maplibre-gl';
 import { useStore } from '../store';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-const INITIAL_VIEW_STATE = { longitude: 120.5, latitude: 24.5, zoom: 7, pitch: 45, bearing: 0 };
+const INITIAL_VIEW_STATE = { longitude: 92.7265, latitude: 11.6233, zoom: 10, pitch: 45, bearing: 0 };
 
 
 export default function TacticalMap() {
