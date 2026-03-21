@@ -101,7 +101,7 @@ The engine utilizes high-precision spherical geometry to ensure tactical accurac
 1.  **Haversine Distance**: Used for relative distance calculation between moving assets.
     -   *Formula*: $d = 2r \arcsin(\sqrt{\sin^2(\frac{\Delta\phi}{2}) + \cos\phi_1\cos\phi_2\sin^2(\frac{\Delta\lambda}{2})})$
 2.  **Bearing Calculation**: Determines the intercept heading for automated assets.
-3.  **Geofential Breach Detection**: A 5.0km exclusion zone around (120.5E, 24.5N) is monitored at 1Hz.
+3.  **Geofential Breach Detection**: A 5.0km exclusion zone around (92.7E, 11.6N) is monitored at 1Hz.
 
 ---
 
@@ -152,7 +152,7 @@ Aegis-Grid simulates modern Electronic Warfare (EW) through a dynamic **GPS Jamm
 
 ### 🐍 Backend (`/aegis-grid/backend`)
 -   `main/main.py`: FastAPI entry point and WebSocket bridge.
--   `main/simulator.py`: **The Heart**. Contains the 1Hz update loop and Taiwan Strait coordinate logic.
+-   `main/simulator.py`: **The Heart**. Contains the 1Hz update loop and Indian Ocean coordinate logic.
 -   `models/`: Pydantic schemes for tactical data.
 -   `services/`: Business logic for RAG and Agentic flows.
 
