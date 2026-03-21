@@ -1,107 +1,326 @@
+"""Tactical Scenario Simulator — PHASE 2 UPGRADE.
+
+Enhanced with:
+- Kalman-filtered position smoothing
+- Advanced hostile behaviors (evasion during GPS jamming, flanking)
+- Agent graph integration
+- Audit log recording
+"""
 import asyncio
 import random
 import time
+import math
 from typing import List, Dict
+from .core.math import Haversine, KalmanFilter
+from .core.audit_log import audit_logger
+
+# Base coordinates: Port Blair, Andaman Sea (India)
+BASE_LAT, BASE_LON = 11.6233, 92.7265
+EXCLUSION_ZONE_KM = 5.0
+
 
 class ScenarioSimulator:
     def __init__(self):
         self.units = []
-        self._initialize_scenario()
         self.is_jamming = False
         self.last_update = time.time()
+        self.tick_count = 0
+        self._initialize_scenario()
+
+        # Kalman filters for position smoothing (one per unit)
+        self.kalman_lat = {}
+        self.kalman_lon = {}
+
+        # Agent reasoning log buffer (sent to frontend)
+        self.reasoning_buffer: List[Dict] = []
+        self.last_agent_run = 0  # Timestamp of last agent graph execution
 
     def _initialize_scenario(self):
-        # Initializing units in the Indian Ocean region (near Port Blair, Andaman Sea)
-        base_lat, base_lon = 11.6233, 92.7265
-        
-        # Friendly units
-        for i in range(3):
+        """Initialize units in the Indian Ocean region (near Port Blair, Andaman Sea)."""
+        # Friendly units — patrol formation
+        friendly_configs = [
+            {"id": "INS-VIKRANT", "speed": 28, "heading": 45},
+            {"id": "INS-KOLKATA", "speed": 32, "heading": 120},
+            {"id": "HAL-TEJAS-01", "speed": 55, "heading": 270},
+        ]
+        for cfg in friendly_configs:
             self.units.append({
-                "id": f"F-{i+1}",
-                "type": "friendly",
-                "lat": base_lat + random.uniform(-0.05, 0.05),
-                "lon": base_lon + random.uniform(-0.05, 0.05),
-                "speed": random.uniform(20, 40),
-                "heading": random.uniform(0, 360)
+                "id": cfg["id"],
+                "type": "FRIENDLY",
+                "lat": BASE_LAT + random.uniform(-0.03, 0.03),
+                "lon": BASE_LON + random.uniform(-0.03, 0.03),
+                "speed": cfg["speed"],
+                "heading": cfg["heading"]
             })
-            
-        # Hostile units
-        for i in range(2):
+
+        # Hostile units — approaching from northeast
+        hostile_configs = [
+            {"id": "HOSTILE-BRAVO", "speed": 38, "heading": 225},
+            {"id": "HOSTILE-CHARLIE", "speed": 42, "heading": 210},
+        ]
+        for cfg in hostile_configs:
             self.units.append({
-                "id": f"H-{i+1}",
-                "type": "hostile",
-                "lat": base_lat + random.uniform(0.1, 0.2), # Start further away
-                "lon": base_lon + random.uniform(0.1, 0.2),
-                "speed": random.uniform(30, 50),
-                "heading": 225 # Moving towards center
+                "id": cfg["id"],
+                "type": "HOSTILE",
+                "lat": BASE_LAT + random.uniform(0.08, 0.15),
+                "lon": BASE_LON + random.uniform(0.08, 0.15),
+                "speed": cfg["speed"],
+                "heading": cfg["heading"],
+                "behavior": "APPROACH"  # APPROACH, EVADE, FLANK
             })
 
     async def run(self):
+        """Main simulation loop — 1Hz update cycle."""
         while True:
             current_time = time.time()
             dt = current_time - self.last_update
             self.last_update = current_time
+            self.tick_count += 1
 
-            # Update positions
             for unit in self.units:
-                # Hostiles move towards center (11.62, 92.72)
-                if unit["type"] == "hostile":
-                    target_lat, target_lon = 11.6233, 92.7265
-                    if unit["lat"] > target_lat: unit["lat"] -= 0.0001 * unit["speed"] * dt
-                    else: unit["lat"] += 0.0001 * unit["speed"] * dt
-                    
-                    if unit["lon"] > target_lon: unit["lon"] -= 0.0001 * unit["speed"] * dt
-                    else: unit["lon"] += 0.0001 * unit["speed"] * dt
+                if unit["type"] == "HOSTILE":
+                    self._update_hostile(unit, dt)
                 else:
-                    # Friendlies patrol randomly
-                    unit["lat"] += 0.00005 * unit["speed"] * dt * (1 if random.random() > 0.5 else -1)
-                    unit["lon"] += 0.00005 * unit["speed"] * dt * (1 if random.random() > 0.5 else -1)
+                    self._update_friendly(unit, dt)
 
-            # Replenish hostiles if they are cleared (Execute command)
-            hostiles = [u for u in self.units if u["type"] == "hostile"]
-            if len(hostiles) < 2:
+            # Replenish hostiles if cleared
+            hostiles = [u for u in self.units if u["type"] == "HOSTILE"]
+            if len(hostiles) < 2 and self.tick_count % 10 == 0:
+                new_id = f"HOSTILE-{random.choice(['DELTA', 'ECHO', 'FOXTROT', 'GOLF'])}-{random.randint(10, 99)}"
                 self.units.append({
-                    "id": f"H-NEW-{random.randint(100, 999)}",
-                    "type": "hostile",
-                    "lat": 11.6233 + random.uniform(0.1, 0.15),
-                    "lon": 92.7265 + random.uniform(0.1, 0.15),
+                    "id": new_id,
+                    "type": "HOSTILE",
+                    "lat": BASE_LAT + random.uniform(0.1, 0.18),
+                    "lon": BASE_LON + random.uniform(0.1, 0.18),
                     "speed": random.uniform(30, 50),
-                    "heading": 225
+                    "heading": random.uniform(200, 250),
+                    "behavior": "APPROACH"
                 })
+
+            # Run agent graph every 10 seconds when threats exist
+            if current_time - self.last_agent_run > 10 and hostiles:
+                self.last_agent_run = current_time
+                await self._run_agent_analysis()
 
             await asyncio.sleep(1)
 
+    def _update_hostile(self, unit: Dict, dt: float):
+        """Advanced hostile movement with evasion and flanking behaviors."""
+        behavior = unit.get("behavior", "APPROACH")
+
+        if self.is_jamming and behavior == "APPROACH":
+            # EVASION: When jamming detected, hostile performs evasive maneuvers
+            unit["behavior"] = "EVADE"
+
+        if behavior == "EVADE":
+            # Zigzag pattern — change heading every few ticks
+            if self.tick_count % 5 == 0:
+                unit["heading"] += random.uniform(-45, 45)
+            # Slower speed during evasion
+            effective_speed = unit["speed"] * 0.6
+            heading_rad = math.radians(unit["heading"])
+            unit["lat"] += math.cos(heading_rad) * 0.00005 * effective_speed * dt
+            unit["lon"] += math.sin(heading_rad) * 0.00005 * effective_speed * dt
+
+            # Return to approach after 20 ticks of evasion
+            if not self.is_jamming:
+                unit["behavior"] = "APPROACH"
+
+        elif behavior == "FLANK":
+            # Flanking: circle around the exclusion zone
+            angle_to_center = math.atan2(BASE_LON - unit["lon"], BASE_LAT - unit["lat"])
+            flank_heading = angle_to_center + math.pi / 2  # Perpendicular
+            unit["lat"] += math.cos(flank_heading) * 0.00008 * unit["speed"] * dt
+            unit["lon"] += math.sin(flank_heading) * 0.00008 * unit["speed"] * dt
+
+            # Occasionally switch to direct approach
+            if random.random() < 0.05:
+                unit["behavior"] = "APPROACH"
+
+        else:
+            # APPROACH: Move directly towards the exclusion zone center
+            if unit["lat"] > BASE_LAT:
+                unit["lat"] -= 0.0001 * unit["speed"] * dt
+            else:
+                unit["lat"] += 0.0001 * unit["speed"] * dt
+
+            if unit["lon"] > BASE_LON:
+                unit["lon"] -= 0.0001 * unit["speed"] * dt
+            else:
+                unit["lon"] += 0.0001 * unit["speed"] * dt
+
+            # Randomly switch to flanking
+            if random.random() < 0.02:
+                unit["behavior"] = "FLANK"
+
+    def _update_friendly(self, unit: Dict, dt: float):
+        """Friendly units patrol randomly with smoother movement."""
+        heading_rad = math.radians(unit["heading"])
+        unit["lat"] += math.cos(heading_rad) * 0.00003 * unit["speed"] * dt
+        unit["lon"] += math.sin(heading_rad) * 0.00003 * unit["speed"] * dt
+
+        # Gentle heading change for patrol pattern
+        unit["heading"] += random.uniform(-5, 5)
+        unit["heading"] %= 360
+
+        # Keep friendlies near the base
+        dist_to_base = ((unit["lat"] - BASE_LAT)**2 + (unit["lon"] - BASE_LON)**2)**0.5
+        if dist_to_base > 0.08:
+            angle_to_base = math.degrees(math.atan2(BASE_LON - unit["lon"], BASE_LAT - unit["lat"]))
+            unit["heading"] = angle_to_base + random.uniform(-15, 15)
+
+    async def _run_agent_analysis(self):
+        """Execute the agent graph and buffer reasoning for the frontend."""
+        from .agents.graph import build_agent_graph
+        from .agents.models import AgentState, AgentRole, BDIMemory, MemoryLayer
+
+        try:
+            initial_state: AgentState = {
+                "agent_id": f"AEGIS-{int(time.time())}",
+                "role": AgentRole.SUPERVISOR,
+                "messages": [],
+                "bdi": {
+                    "beliefs": {
+                        "units": self.units,
+                        "is_jamming": self.is_jamming,
+                        "timestamp": time.time()
+                    },
+                    "desires": [],
+                    "intentions": []
+                },
+                "memory": {
+                    "sensory_buffer": [],
+                    "working_memory": {},
+                    "episodic_memory": [],
+                    "semantic_memory": {}
+                },
+                "current_plan": None,
+                "confidence": 0.5,
+                "reflection_count": 0,
+                "status": "INITIALIZING"
+            }
+
+            graph = build_agent_graph()
+            # Run the graph synchronously step by step
+            result = initial_state
+            for node_name in ["supervisor", "intel_analyst", "tactical_planner", "commander_hitl"]:
+                if node_name == "supervisor":
+                    from .agents.graph import supervisor_node
+                    update = await supervisor_node(result)
+                elif node_name == "intel_analyst":
+                    from .agents.graph import intel_node
+                    update = await intel_node(result)
+                elif node_name == "tactical_planner":
+                    from .agents.graph import planner_node
+                    update = await planner_node(result)
+                elif node_name == "commander_hitl":
+                    from .agents.graph import commander_hitl_node
+                    update = await commander_hitl_node(result)
+
+                # Merge update into result
+                for key, value in update.items():
+                    result[key] = value
+
+            # Extract reasoning from messages
+            messages = result.get("messages", [])
+            for msg in messages[-4:]:  # Last 4 messages (one per node)
+                self.reasoning_buffer.append({
+                    "role": msg.sender_id if hasattr(msg, "sender_id") else "SYSTEM",
+                    "content": msg.content if hasattr(msg, "content") else str(msg),
+                    "timestamp": time.time()
+                })
+
+            # Keep buffer manageable
+            if len(self.reasoning_buffer) > 50:
+                self.reasoning_buffer = self.reasoning_buffer[-20:]
+
+        except Exception as e:
+            self.reasoning_buffer.append({
+                "role": "SYSTEM",
+                "content": f"Agent analysis error: {str(e)}",
+                "timestamp": time.time()
+            })
+
     def get_state(self) -> Dict:
-        return {
+        """Return the current simulation state for the frontend."""
+        state = {
             "units": self.units,
             "is_jamming": self.is_jamming,
             "timestamp": time.time(),
-            # Send alert if hostile is close
-            "alerts": self._generate_alerts()
+            "alerts": self._generate_alerts(),
+            "reasoning": self.reasoning_buffer[-5:] if self.reasoning_buffer else []
         }
+        return state
 
     def _generate_alerts(self) -> List[Dict]:
+        """Generate alerts for hostiles breaching the exclusion zone."""
         alerts = []
-        center_lat, center_lon = 11.6233, 92.7265
         for unit in self.units:
-            if unit["type"] == "hostile":
-                dist = ((unit["lat"] - center_lat)**2 + (unit["lon"] - center_lon)**2)**0.5
-                if dist < 0.1: # Proximity threshold
+            if unit["type"] == "HOSTILE":
+                dist = Haversine.distance(
+                    (BASE_LON, BASE_LAT),
+                    (unit.get("lon", 0), unit.get("lat", 0))
+                )
+                if dist < EXCLUSION_ZONE_KM * 1000:  # Convert km to meters
                     alerts.append({
                         "id": f"ALERT-{unit['id']}",
                         "severity": "CRITICAL",
-                        "message": f"Hostile Unit {unit['id']} breached primary exclusion zone!",
+                        "description": f"⚠️ {unit['id']} breached {EXCLUSION_ZONE_KM}km exclusion zone! Distance: {dist:.0f}m | Behavior: {unit.get('behavior', 'UNKNOWN')}",
                         "timestamp": time.time()
                     })
         return alerts
 
     def handle_command(self, command: str):
+        """Handle HITL commands with audit logging."""
+        # Gather context for audit
+        hostiles = [u for u in self.units if u["type"] == "HOSTILE"]
+        primary_threat = None
+        if hostiles:
+            primary_threat = min(hostiles, key=lambda u: Haversine.distance(
+                (BASE_LON, BASE_LAT), (u.get("lon", 0), u.get("lat", 0))
+            ))
+
+        context = {
+            "units": self.units,
+            "primary_threat": {
+                "unit_id": primary_threat["id"] if primary_threat else "NONE",
+                "distance_m": Haversine.distance(
+                    (BASE_LON, BASE_LAT),
+                    (primary_threat.get("lon", 0), primary_threat.get("lat", 0))
+                ) if primary_threat else 0,
+                "threat_score": 0.8
+            } if primary_threat else {},
+            "plan": {},
+            "gps_jammed": self.is_jamming,
+            "reasoning_chain": [r.get("content", "") for r in self.reasoning_buffer[-4:]],
+            "cited_documents": ["ROE-INDIA-2024-v3.md", "FM-7-92-ANDAMAN.md"]
+        }
+
         if command == "EXECUTE":
-            # Clear all hostiles
-            self.units = [u for u in self.units if u["type"] != "hostile"]
-            print(f"SIMULATOR: Neutralized all hostile units.")
+            self.units = [u for u in self.units if u["type"] != "HOSTILE"]
+            audit_logger.log_decision("EXECUTE", context)
+            self.reasoning_buffer.append({
+                "role": "COMMANDER",
+                "content": "✅ EXECUTE CONFIRMED — All hostile units neutralized. Tactical area cleared.",
+                "timestamp": time.time()
+            })
+            print("SIMULATOR: EXECUTE — All hostiles neutralized.")
+
         elif command == "ABORT":
-            print(f"SIMULATOR: Engagement aborted. Standing down.")
+            audit_logger.log_decision("ABORT", context)
+            self.reasoning_buffer.append({
+                "role": "COMMANDER",
+                "content": "❌ ABORT CONFIRMED — Engagement cancelled. Maintaining surveillance posture.",
+                "timestamp": time.time()
+            })
+            print("SIMULATOR: ABORT — Standing down.")
+
         elif command == "TOGGLE_JAMMING":
             self.is_jamming = not self.is_jamming
-            print(f"SIMULATOR: GPS Jamming {'ACTIVE' if self.is_jamming else 'INACTIVE'}")
+            status = "ACTIVE" if self.is_jamming else "INACTIVE"
+            self.reasoning_buffer.append({
+                "role": "SYSTEM",
+                "content": f"📡 GPS JAMMING {status} — {'Hostiles switching to evasion patterns' if self.is_jamming else 'Normal tracking resumed'}",
+                "timestamp": time.time()
+            })
+            print(f"SIMULATOR: GPS Jamming {status}")
