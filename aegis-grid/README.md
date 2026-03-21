@@ -1,60 +1,110 @@
-# Project Aegis-Grid
-**Tactical Multi-Agent Geospatial Intelligence & Response System**
+# 🦅 Aegis-Grid: Tactical Multi-Agent C2 Intelligence System
 
-An air-gapped, multi-agent RAG system that fuses real-time geospatial intelligence, threat feeds, and operational doctrines to autonomously coordinate tactical drone swarms and ground units in GPS-denied environments.
+**Aegis-Grid** is a state-of-the-art Command and Control (C2) Dashboard and Tactical Simulator. It is designed to demonstrate multi-agent coordination, real-time geospatial intelligence, and Human-in-the-Loop (HITL) decision-making in contested environments.
 
-## 🦅 IRON PROTOCOL - Architectural Blueprint
+---
 
-This repository is built under the strict and uncompromising engineering standards of the IRON PROTOCOL.
-Aegis-Grid represents the bleeding-edge intersection of Agentic AI, Contested Environments, Multi-Domain Data Fusion, and Zero Trust Architecture.
+## 🏗️ SYSTEM ARCHITECTURE Overview
 
-### Core Architecture (Hexagonal DDD + CQRS)
-- **Domain Driven Design (DDD)**: Strictly bounded contexts (`agent`, `c2`, `geospatial`, `threat`).
-- **Hexagonal Architecture**: Business logic isolated completely from frameworks through explicit adapters.
-- **CQRS**: Reads and writes are completely decoupled through an internal async pub/sub Event Bus.
-- **Saga & Circuit Breaker**: Distributed interactions employ exponential backoff with jitter and automated recovery cycles.
+### 🎖️ High-Level Mission
+The system operates as a **Tactical Supervisor**, bridging the gap between autonomous AI agents and human commanders. It fuses live telemetry from friendly units and hostile threats into a single "God-eye" view.
 
-### Multi-Agent Intelligence (LangGraph BDI)
-- **BDI Model**: Agents operate strictly on Beliefs, Desires, and Intentions.
-- **ReAct & Reflexion**: Agents critique their own output and regenerate if confidence falls below thresholds (<0.9).
-- **Constitutional AI Check**: Tactical plans are run against Rules of Engagement (ROE) before human-in-the-loop (HITL) presentation.
-- **SQLite Checkpointing**: LangGraph pauses execution, serializes the BDI state, and waits for WebSocket confirmation.
+### 🧩 Core Components (Major-to-Major)
+1.  **C2 Tactical Dashboard (Frontend)**: A high-performance React application utilizing `Deck.gl` for hardware-accelerated geospatial rendering.
+2.  **Tactical Simulator (Backend)**: A high-fidelity Python-based engine that simulates unit dynamics, threat incursions, and signal interference.
+3.  **Agent Reasoning Engine**: A mock-agent logic that provides situational awareness logs and tactical recommendations.
 
-### Advanced RAG Pipeline
-- **RAG Fusion & RRF**: Generates sub-queries, runs parallel searches, and merges using Reciprocal Rank Fusion.
-- **HyDE**: Hypothetical Document Embeddings for robust search.
-- **Semantic Chunking & Contextual Compression**: Extracts only mathematically relevant sentences from retrieved chunks.
-- **Qdrant Scalar Quantization**: Optimized INT8 vector retrieval for edge deployment.
+---
 
-### Complex Geospatial Mathematics
-- **Haversine & Vincenty**: For highly precise curved-surface distances.
-- **A* & Theta***: Grid-based and any-angle pathfinding for tactical swarm routing.
-- **Graham Scan & Ray Casting**: For geofenced inclusion zones and dynamic patrol boundaries.
-- **DBSCAN**: Enemy cluster formation detection.
-- **Kalman Filter**: Live 1D/2D smoothing for noisy GPS coordinates under jammed conditions.
+## 📡 TECHNICAL DEEP DIVE (Minor-to-Minor)
 
-## 📡 Live Pipeline & System Design
-```mermaid
-graph TD
-    A[WebSocket Feeds] -->|msgpack| B(Connection Manager)
-    B --> C{Event Bus CQRS}
-    C -->|Position Update| D[PostGIS GIST]
-    C -->|Alert| E[Supervisor Agent]
-    E --> F[Intel Analyst]
-    F <-->|HyDE + RRF| G[(Qdrant INT8)]
-    F --> H[Tactical Planner]
-    H -->|Constitutional Check| I[HITL Socket Pause]
-    I -->|Execute / Abort| J[React Deck.gl Dashboard]
+### 💻 Frontend Stack
+- **Framework**: [React](https://reactjs.org/) + [Vite](https://vitejs.dev/) for ultra-fast HMR.
+- **Geospatial Engine**: [Deck.gl](https://deck.gl/) for rendering 1000+ units with 60fps performance.
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand) for lightweight, high-speed tactical state updates.
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with a custom "Tactical Dark" theme.
+- **Icons**: [Lucide-React](https://lucide.dev/) for crisp, military-grade iconography.
+
+### ⚙️ Backend Stack
+- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) for high-concurrency WebSocket management.
+- **Simulation Environment**: `Asyncio` driven loops running at 1Hz (Tactical Update Rate).
+- **Communication**: Bi-directional WebSockets using JSON-framed messaging.
+- **Data Channels**:
+    - `units.positions`: Real-time telemetry for all map entities.
+    - `threats.alerts`: Critical notifications for hostile incursions.
+    - `agents.reasoning`: NLP-formatted logs explaining the AI's internal BDI (Belief-Desire-Intention) state.
+
+---
+
+## 🎮 INTERACTIVE WORKFLOWS
+
+### 🛠️ Workflow 1: Local Development Setup
+1.  **Clone & Enter**:
+    ```bash
+    git clone https://github.com/imshivanshutiwari/Aegis-Grid.git
+    cd Aegis-Grid
+    ```
+2.  **Start Backend**:
+    ```bash
+    cd aegis-grid/backend
+    $env:PYTHONPATH="."
+    python -m uvicorn main.main:app --port 8000 --reload
+    ```
+3.  **Start Frontend**:
+    ```bash
+    cd aegis-grid/frontend
+    npm install
+    npm run dev -- --port 3000
+    ```
+
+### 🗺️ Workflow 2: Tactical Monitoring
+- **Navigate**: Use the map to zoom into the **Taiwan Strait**, our primary Area of Responsibility (AOR).
+- **Identify**: 
+    - 🔵 **Blue**: Friendly assets (Drones/Ground Units).
+    - 🔴 **Red**: Hostile incursions moving towards the center.
+    - 🟡 **Yellow Glow**: Critical threats identified by the Supervisor AI.
+
+### ⚡ Workflow 3: HITL Response (Execute/Abort)
+1.  **Detect**: Supervisor AI identifies a critical threat and logs it in the **Agent Reasoning Panel**.
+2.  **Analyze**: Review the threat description in the **Critical Threats** list.
+3.  **Decision**:
+    - Click **EXECUTE**: Authorized tactical response. The system will neutralize (remove) the hostile units from the map.
+    - Click **ABORT**: Halt engagement. System stands down and logs the commander's override.
+
+### 📡 Workflow 4: Electronic Warfare (EW) Simulation
+1.  **Trigger**: Click the **Jam GPS** button in the top header.
+2.  **Observe**:
+    - Map units will begin to **Jitter**, simulating signal interference.
+    - Orange **Uncertainty Radii** will appear around units, showing the loss of precise PNT (Position, Navigation, and Timing).
+3.  **Recover**: Click **Jam GPS** again to restore signal integrity and clear the "GPS JAMMED" status.
+
+---
+
+## 📁 REPOSITORY STRUCTURE
+```text
+Aegis-Grid/
+├── aegis-grid/
+│   ├── backend/
+│   │   ├── main/
+│   │   │   ├── main.py        # FastAPI Entry Point & WS Handler
+│   │   │   ├── simulator.py   # Tactical Incursion Engine
+│   │   │   └── adapters/      # Interface Adapters (Websocket Manager)
+│   │   └── tests/             # Unit and Integration Tests
+│   └── frontend/
+│       ├── src/
+│       │   ├── App.jsx        # Main C2 UI Logic
+│       │   ├── store.js       # Global Tactical Store (Zustand)
+│       │   └── components/    # TacticalMap.jsx (Deck.gl integration)
+│       └── package.json       # Frontend Dependencies
+└── docs/                      # Architectural Deep Dives
 ```
 
-## 🚀 Setup & Execution
-1. Install Docker & Docker Compose
-2. Run `docker-compose up --build`
-3. Navigate to `http://localhost:3000`
+---
 
-## 🛡️ Zero Trust Security
-- **RBAC**: OBSERVER, ANALYST, COMMANDER, SUPERADMIN roles.
-- **JWT**: Secure token issuance.
-- **Strict Pydantic schemas**: Zero string interpolation.
+## 🛡️ MISSION STANDARDS
+This project is built to the **IRON PROTOCOL** standard:
+- **Resilience**: Automatic reconnection on WebSocket failure.
+- **Responsiveness**: <50ms UI latency for tactical updates.
+- **Relevance**: Simulation coordinates set to real-world strategic theaters (Taiwan Strait).
 
-> Note: Designed for demonstration and architectural study of advanced tactical AI systems.
+**Built with passion for next-gen Defense Technology.** 🦅

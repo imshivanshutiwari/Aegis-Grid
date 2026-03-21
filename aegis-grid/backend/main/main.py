@@ -66,10 +66,33 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             # ReAct loop / Heartbeat incoming messages
-            data = await websocket.receive_text()
-            if data == "ping":
+            msg_text = await websocket.receive_text()
+            if msg_text == "ping":
                 await websocket.send_text("pong")
-            else:
-                logger.debug(f"Received WS command: {data}")
+                continue
+
+            try:
+                import json
+                command_data = json.loads(msg_text)
+                command = command_data.get("command")
+                
+                if command in ["EXECUTE", "ABORT"]:
+                    logger.info(f"Received {command} command from C2 Dashboard.")
+                    
+                    # Execute the tactical action in the simulator
+                    from main.simulator import simulator
+                    simulator.handle_command(command)
+
+                    # Broadcast confirmation to the reasoning log
+                    status_log = {
+                        "role": "supervisor",
+                        "content": f"COMMAND RECEIVED: {command}. Initiating protocol response sequence."
+                        if command == "EXECUTE" else f"COMMAND RECEIVED: {command}. Standing down all units."
+                    }
+                    await manager.broadcast_json({"channel": "agents.reasoning", "data": status_log})
+                else:
+                    logger.debug(f"Received WS command: {msg_text}")
+            except json.JSONDecodeError:
+                logger.debug(f"Received non-JSON message: {msg_text}")
     except WebSocketDisconnect:
         manager.disconnect(websocket)

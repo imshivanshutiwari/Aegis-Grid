@@ -7,7 +7,8 @@ import maplibregl from 'maplibre-gl';
 import { useStore } from '../store';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-const INITIAL_VIEW_STATE = { longitude: 0, latitude: 0, zoom: 4, pitch: 45, bearing: 0 };
+const INITIAL_VIEW_STATE = { longitude: 120.5, latitude: 24.5, zoom: 7, pitch: 45, bearing: 0 };
+
 
 export default function TacticalMap() {
   const units = useStore(state => state.units);
@@ -44,7 +45,10 @@ export default function TacticalMap() {
       radiusMinPixels: 5,
       radiusMaxPixels: 100,
       lineWidthMinPixels: 1,
-      getPosition: d => [d.lon, d.lat],
+      getPosition: d => {
+        const noise = gpsJammed ? (Math.random() - 0.5) * 0.02 : 0;
+        return [d.lon + noise, d.lat + noise];
+      },
       getFillColor: d => getUnitColor(d.unit_type),
       getLineColor: d => [255, 255, 255],
     }),
@@ -52,18 +56,25 @@ export default function TacticalMap() {
         id: 'uncertainty-layer',
         data: gpsJammed ? units : [],
         pickable: false,
-        opacity: 0.3,
+        opacity: 0.2,
         stroked: true,
         filled: true,
-        radiusScale: 50,
+        radiusScale: 100,
+        radiusMinPixels: 20,
         getPosition: d => [d.lon, d.lat],
-        getFillColor: [255, 165, 0, 100],
-        getLineColor: [255, 165, 0, 200]
+        getFillColor: [255, 100, 0, 40],
+        getLineColor: [255, 100, 0, 80],
+        updateTriggers: {
+          data: [gpsJammed]
+        }
     }),
     new TextLayer({
         id: 'text-layer',
         data: units,
-        getPosition: d => [d.lon, d.lat],
+        getPosition: d => {
+          const noise = gpsJammed ? (Math.random() - 0.5) * 0.1 : 0;
+          return [d.lon + noise, d.lat + noise];
+        },
         getText: d => d.id.substring(0, 4),
         getSize: 12,
         getColor: [255, 255, 255],
