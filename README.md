@@ -1,94 +1,120 @@
-# Aegis-Grid: Tactical Multi-Agent Geospatial Intelligence & Response System
+<div align="center">
+  <img src="https://img.icons8.com/isometric/512/rocket.png" width="80" />
+</div>
 
-![Aegis Grid Banner](https://via.placeholder.com/1200x400.png?text=AEGIS-GRID+C2+ARCHITECTURE)
+<h1 align="center">🛡️ Aegis-Grid Tactical Intelligence & C2 Engine</h1>
 
-## Overview
-Aegis-Grid is a conceptual, air-gapped Command and Control (C2) system designed for the modern contested battlespace. It fuses real-time geospatial intelligence with deterministic, stateful Multi-Agent AI (LangGraph) and local Retrieval-Augmented Generation (RAG).
+<p align="center">
+  <strong>A High-Fidelity Tactical Command & Control (C2) Dashboard & Multi-Agent Evaluation Environment</strong>
+</p>
 
-When a hostile entity breaches a geofenced zone, Aegis-Grid autonomously evaluates the threat against ingested tactical doctrines (ROE) and proposes a multi-domain response plan (e.g., routing a drone swarm) to a Human-in-the-Loop (HITL) commander.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python" alt="Python" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
+  <img src="https://img.shields.io/badge/Streamlit-Dashboard-red?style=for-the-badge" alt="Dashboard" />
+  <img src="https://img.shields.io/badge/Pygame-Visualizer-yellow?style=for-the-badge" alt="Visualizer" />
+  <img src="https://img.shields.io/badge/Status-Active%20Research-orange?style=for-the-badge" alt="Status" />
+</p>
 
-### Key Capabilities
-*   **Geospatial Telemetry Ingestion:** Simulates streaming hundreds of moving units (Friendlies, Hostiles, Unknowns) via WebSockets to a WebGL-accelerated `deck.gl` map.
-*   **Multi-Agent Orchestration:** Uses `LangGraph` to coordinate a Supervisor, an Intel Analyst, and a Tactical Planner agent.
-*   **Zero-Trust Edge RAG:** Connects to a local `Qdrant` vector database to query Markdown-based Rules of Engagement (ROE) and Field Manuals.
-*   **Explainable AI (XAI):** Every reasoning step the LLM takes is logged and visually mapped to the specific RAG document it cited.
-*   **Simulated GPS Denial:** Toggles degrade location accuracy, forcing agents to switch from precise routing to probabilistic area-search routing.
+---
 
-## Technology Stack
-*   **Backend:** Python 3.12, FastAPI, WebSockets, LangChain, LangGraph
-*   **Frontend:** React (Vite), Deck.gl, MapboxGL, TailwindCSS, Zustand, React Query
-*   **Databases:** PostGIS (Spatial), Qdrant (Vector/RAG), SQLite (Checkpointing)
-*   **Deployment:** Docker, Docker Compose, GitHub Actions, Prometheus, Grafana
+## 📖 TABLE OF CONTENTS
+- [1. Executive Summary](#1-executive-summary)
+- [2. Major Architecture](#2-major-architecture)
+- [3. Technical Specifications](#3-technical-specifications)
+- [4. Multi-Agent Logic](#4-multi-agent-logic)
+- [5. Geospatial Mathematics](#5-geospatial-mathematics)
+- [6. Live Simulator Workflows](#6-live-simulator-workflows)
+- [7. Installation & Deployment](#7-installation--deployment)
+- [8. GitHub Actions & CI/CD](#8-github-actions--cicd)
 
-## Architecture
+---
 
-Aegis-Grid strictly adheres to **Hexagonal Architecture** with distinct ports and adapters for four main DDD Bounded Contexts:
-1. Geospatial
-2. Agent
-3. Threat
-4. C2
+## 1. EXECUTIVE SUMMARY
+**Aegis-Grid** represents the cutting edge of modern tactical systems. It is an air-gapped capable, multi-agent response system that fuses real-time geospatial telemetry with operational doctrines. 
 
-The application utilizes **CQRS** (Command Query Responsibility Segregation) and an **Event-Driven Architecture** (Event Bus) for inter-service communication. Robustness is ensured via the **Circuit Breaker** and **Saga Patterns**.
+Key Mission Objectives:
+- **Autonomous Coordination**: Real-time tracking of drone swarms and hostile incursions.
+- **Contested Environments**: Built-in Electronic Warfare (EW) simulation for GPS-denied navigation study.
+- **HITL Integration**: Seamless Human-in-the-Loop approval chains for ethical AI engagement.
 
-```mermaid
-graph TD;
-    A[Drone/Radar Feeds] -->|WebSockets| B(FastAPI Ingestion);
-    B -->|AsyncPG| C[(PostGIS)];
-    C --> D{LangGraph Supervisor};
-    D -->|Query| E[(Qdrant Vector DB)];
-    D -->|Task| F[Intel Analyst Agent];
-    D -->|Task| G[Tactical Planner Agent];
-    F --> H[C2 Dashboard];
-    G --> H;
+---
+
+## 2. MAJOR ARCHITECTURE
+### 🏆 System Blueprint
+Built on a **Hexagonal Design (Domain Driven Design)** to ensure the core business logic is decouple from transient frameworks (FastAPI/React).
+
+- **Domain Layer**: Pure tactical logic, unit models, and state machines.
+- **Infrastructure Layer**: WebSocket adapters, SQLite persistence, and Qdrant vector retrieval.
+- **Application Layer**: C2 Dashboard (React/Vite) providing the global common operating picture (COP).
+
+---
+
+## 3. TECHNICAL SPECIFICATIONS
+### 🧩 Backend (Python 3.10+)
+- **FastAPI**: Asynchronous event handling with high-throughput WebSocket streaming.
+- **Uvicorn**: Lightning-fast ASGI server for production-grade stability.
+
+### 🖼️ Frontend (React 18 + Vite)
+- **Deck.gl**: WebGL2-powered geospatial rendering for smooth 60FPS unit tracking.
+- **Zustand**: High-performance, flux-pattern state management.
+- **Lucide Icons**: Military-grade, vectorized iconography.
+
+---
+
+## 4. MULTI-AGENT LOGIC
+The system utilizes a **Belief-Desire-Intention (BDI)** model for its autonomous agents:
+1.  **Beliefs**: Fused geospatial telemetry (Positions, Threat Scores).
+2.  **Desires**: Strategic objectives (e.g., Maintain exclusion zones).
+3.  **Intentions**: Tactical plans (e.g., Intercept Hostile ID: 48F2).
+
+---
+
+## 5. GEOSPATIAL MATHEMATICS
+The engine performs complex calculations to ensure tactical accuracy:
+- **Haversine Distance**: High-velocity intercept point calculations.
+- **Kalman Smoothing**: Dynamic jitter reduction for noisy sensors during GPS Jamming.
+
+---
+
+## 6. LIVE SIMULATOR WORKFLOWS
+
+### ⚡ WORKFLOW A: TACTICAL MONITORING
+1.  **Monitor**: View the live feed at (120.5E, 24.5N) - the Taiwan Strait theater.
+2.  **Alert**: Supervisor AI triggers an alert when a hostile unit breaches the 5km exclusion zone.
+3.  **Decision**: 
+    - **EXECUTE**: Neutralizes the threat and purges hostile entities from the map.
+    - **ABORT**: Halt all current engagements and stand down assets.
+
+---
+
+## 7. INSTALLATION & DEPLOYMENT
+### 🛠️ Local Environment Setup
+```bash
+# Clone the repository
+git clone https://github.com/imshivanshutiwari/Aegis-Grid.git
+
+# Terminal 1: Backend
+cd Aegis-Grid/aegis-grid/backend
+python -m venv venv
+./venv/Scripts/activate
+pip install -r requirements.txt
+python -m uvicorn main.main:app --port 8000
+
+# Terminal 2: Frontend
+cd Aegis-Grid/aegis-grid/frontend
+npm install
+npm run dev
 ```
 
-## Setup & Deployment (Docker Compose)
-The easiest way to spin up the entire Aegis-Grid stack (Backend, Frontend, PostGIS, Qdrant, Prometheus, Grafana) is via Docker Compose.
+---
 
-### Prerequisites
-*   Docker & Docker Compose installed
-*   An LLM provider API key (OpenAI for testing, or Ollama/LocalAI URL for true air-gapped deployment).
+## 8. GITHUB ACTIONS & CI/CD
+The project includes automated pipelines in `.github/workflows/`:
+- **CI Build**: Validates frontend builds on every push.
+- **Test Suite**: Automated Python unit testing for simulator consistency.
 
-### Environment Variables
-| Variable | Description | Default |
-| -------- | ----------- | ------- |
-| `ENVIRONMENT` | Deployment environment | `development` |
-| `JWT_SECRET` | Secret key for JWT | `supersecretdefensekey_change_in_prod` |
-| `DATABASE_URL` | PostGIS connection URL | `postgresql+asyncpg://aegis_admin:secure_password@postgis:5432/aegis_spatial` |
-| `QDRANT_URL` | Qdrant vector DB URL | `http://qdrant:6333` |
-| `OLLAMA_URL` | Local LLM URL | `http://ollama:11434` |
-| `OPENAI_API_KEY` | OpenAI API Key (if used) | |
-| `MAX_WS_CONNECTIONS` | Max WebSocket connections | `1000` |
-| `GPS_JAMMED_NOISE_SIGMA`| GPS noise sigma | `50.0` |
-
-### Steps
-1. Clone the repository
-2. Create a `.env` file in the root directory and populate it.
-3. Build and launch the stack:
-   `docker-compose up --build -d`
-4. Access the C2 Dashboard: `http://localhost:5173`
-5. Access the API Documentation: `http://localhost:8000/docs`
-
-## Local Development (Without Docker)
-### Backend
-`cd backend && pip install -r requirements.txt && uvicorn main:app --reload --port 8000`
-
-### Frontend
-`cd frontend && npm install && npm run dev`
-
-## Testing
-Run the Pytest suite for the backend:
-`cd backend && PYTHONPATH=. pytest tests/ -v --cov=main`
-
-## Security
-* mTLS between containers
-* JWT authentication with HttpOnly cookies
-* RBAC (Role-Based Access Control)
-* ABAC (Attribute-Based Access Control) for document classification
-* Pydantic v2 strict mode
-* Content-Security-Policy headers
-* 10MB input size limit
-* Immutable audit logging
-
-## Disclaimer
-This project is a conceptual software architecture demonstration. It is not classified, nor is it intended for actual kinetic military operations without extensive hardware integration, ruggedization, and rigorous Authority to Operate (ATO) compliance testing.
+---
+<p align="center">
+  Built under the <strong>IRON PROTOCOL</strong>. 🛡️
+</p>
