@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  kavach-api:
+    build: .
+    container_name: kavach_sigma_api
+    ports:
+      - "8000:8000"
+    environment:
+      - QDRANT_HOST=qdrant-server
+      - QDRANT_PORT=6333
+      - LOG_LEVEL=INFO
+    volumes:
+      - .:/app
+    depends_on:
+      - qdrant-server
+    restart: unless-stopped
+    # Use host network for connecting edge sensors directly if needed
+    # network_mode: host
+
+  qdrant-server:
+    image: qdrant/qdrant:latest
+    container_name: kavach_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+
+volumes:
+  qdrant_storage:
