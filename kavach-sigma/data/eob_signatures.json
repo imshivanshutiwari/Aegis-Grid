@@ -1,0 +1,29 @@
+[
+    {
+        "id": "eob_001",
+        "name": "Red Team X-Band Radar",
+        "modulation": "FHSS",
+        "frequency_band": "X-Band",
+        "intent": "Surveillance & Tracking",
+        "vulnerability": "Wideband barrage jamming",
+        "description": "High-power phased array radar typically used for coastal defense."
+    },
+    {
+        "id": "eob_002",
+        "name": "Civilian Comm Relay",
+        "modulation": "BPSK",
+        "frequency_band": "UHF",
+        "intent": "Communication",
+        "vulnerability": "None - Do Not Jam",
+        "description": "Standard unencrypted civilian push-to-talk relay station."
+    },
+    {
+        "id": "eob_003",
+        "name": "Adversary Drone C2 Link",
+        "modulation": "QAM",
+        "frequency_band": "C-Band",
+        "intent": "Command and Control",
+        "vulnerability": "Targeted spot jamming",
+        "description": "Encrypted telemetry and control link for loitering munitions."
+    }
+]
