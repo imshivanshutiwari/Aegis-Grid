@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .simulator import ScenarioSimulator
 from .core.audit_log import audit_logger
 
-app = FastAPI(title="Aegis-Grid Tactical API", version="2.0.0")
+app = FastAPI(title="Aegis-Grid: Tactical AI Suite", version="2.0.1")
 
 # Enable CORS for frontend
 app.add_middleware(

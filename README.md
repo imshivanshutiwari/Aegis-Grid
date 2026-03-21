@@ -2,7 +2,7 @@
   <img src="https://img.icons8.com/isometric/512/rocket.png" width="120" />
 </div>
 
-<h1 align="center">⚔️ AEGIS-GRID: TACTICAL INTELLIGENCE ENGINE ⚔️</h1>
+<h1 align="center">⚔️ AEGIS-GRID: TACTICAL AI SUITE ⚔️</h1>
 
 <p align="center">
   <strong>A High-Fidelity Tactical Command & Control (C2) Dashboard & Multi-Agent Evaluation Environment - Indian Ocean Theater</strong>

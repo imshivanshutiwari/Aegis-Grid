@@ -8,7 +8,7 @@ export default function App() {
   const [ws, setWs] = useState(null);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8000/ws/stream');
+    const socket = new WebSocket('ws://localhost:8000/ws');
 
     socket.onopen = () => console.log('WebSocket connected');
     socket.onmessage = (event) => {
@@ -37,11 +37,11 @@ export default function App() {
       <header className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 z-10">
         <div className="flex items-center space-x-2">
           <ShieldAlert className="text-red-500" />
-          <h1 className="text-xl font-bold uppercase tracking-wider">Aegis-Grid C2</h1>
+          <h1 className="text-xl font-bold uppercase tracking-wider">Aegis-Grid: Tactical AI Suite</h1>
         </div>
         <div className="flex items-center space-x-4">
           <button
-            onClick={toggleGpsJamming}
+            onClick={() => { toggleGpsJamming(); ws?.send(JSON.stringify({ command: 'TOGGLE_JAMMING' })); }}
             className={`px-4 py-2 rounded font-bold ${gpsJammed ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
           >
             {gpsJammed ? 'GPS JAMMED' : 'Jam GPS'}

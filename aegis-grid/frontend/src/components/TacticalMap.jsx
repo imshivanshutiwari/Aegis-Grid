@@ -49,7 +49,7 @@ export default function TacticalMap() {
         const noise = gpsJammed ? (Math.random() - 0.5) * 0.02 : 0;
         return [d.lon + noise, d.lat + noise];
       },
-      getFillColor: d => getUnitColor(d.unit_type),
+      getFillColor: d => getUnitColor(d.type || d.unit_type),
       getLineColor: d => [255, 255, 255],
     }),
     new ScatterplotLayer({
@@ -84,7 +84,7 @@ export default function TacticalMap() {
 
   return (
     <DeckGL initialViewState={INITIAL_VIEW_STATE} controller={true} layers={layers}
-            getTooltip={({object}) => object && `${object.unit_type}\nID: ${object.id}\nThreat: ${object.threat_level || 'N/A'}`}>
+            getTooltip={({object}) => object && `${object.type || object.unit_type}\nID: ${object.id}\nSpeed: ${object.speed || 'N/A'} kts`}>
       <Map mapStyle={MAP_STYLE} mapLib={maplibregl} />
     </DeckGL>
   );

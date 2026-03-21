@@ -248,8 +248,9 @@ class ScenarioSimulator:
             "is_jamming": self.is_jamming,
             "timestamp": time.time(),
             "alerts": self._generate_alerts(),
-            "reasoning": self.reasoning_buffer[-5:] if self.reasoning_buffer else []
+            "reasoning": self.reasoning_buffer[:]
         }
+        self.reasoning_buffer.clear() # Clear after sending to avoid duplicates
         return state
 
     def _generate_alerts(self) -> List[Dict]:
