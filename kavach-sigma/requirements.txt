@@ -1,7 +1,0 @@
-numpy
-torch
-fastapi
-uvicorn
-qdrant-client
-pytest
-pytest-cov
