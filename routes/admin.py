@@ -201,12 +201,12 @@ def export():
         allocations = Allocation.query.all()
 
         # Pre-fetch students and guides for faster lookups
-        students_map = {s.id: s for s in Student.query.options(joinedload(Student.user)).all()}
-        guides_map = {g.id: g for g in Guide.query.options(joinedload(Guide.user)).all()}
+        students_by_id = {s.id: s for s in Student.query.options(joinedload(Student.user)).all()}
+        guides_by_id = {g.id: g for g in Guide.query.options(joinedload(Guide.user)).all()}
 
         for row_idx, alloc in enumerate(allocations, 2):
-            student = students_map.get(alloc.student_id)
-            guide = guides_map.get(alloc.guide_id)
+            student = students_by_id.get(alloc.student_id)
+            guide = guides_by_id.get(alloc.guide_id)
             data = [
                 row_idx - 1,
                 student.user.name if student else 'N/A',

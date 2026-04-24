@@ -70,7 +70,7 @@ async def _agent_analysis_runner(context: dict) -> list:
         ("tactical_planner", planner_node),
         ("commander_hitl", commander_hitl_node),
     ]
-    for _name, node_fn in node_funcs:
+    for node_name, node_fn in node_funcs:
         update = await node_fn(result)
         for key, value in update.items():
             result[key] = value

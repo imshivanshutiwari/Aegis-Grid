@@ -21,6 +21,15 @@ EXCLUSION_ZONE_KM = 5.0
 
 class ScenarioSimulator:
     def __init__(self, agent_runner=None):
+        """
+        Initialise the simulator.
+
+        Args:
+            agent_runner: Optional async callable ``(context: dict) -> list`` that
+                          performs agent analysis and returns a list of reasoning-log
+                          entries.  When *None* the simulator runs without AI analysis
+                          (useful for testing or lightweight deployments).
+        """
         self.units = []
         self.is_jamming = False
         self.last_update = time.time()

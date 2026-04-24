@@ -44,7 +44,7 @@ def preferences():
         c3 = request.form.get('choice_3')
 
         # Validate no duplicates
-        choices = [c for c in [c1, c2, c3] if c]
+        choices = [choice for choice in [c1, c2, c3] if choice]
         if len(choices) != len(set(choices)):
             flash('Each preference must be a different guide.', 'error')
             return render_template('student/preferences.html',
