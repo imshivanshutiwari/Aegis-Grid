@@ -25,8 +25,69 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Shared simulator instance
-simulator = ScenarioSimulator()
+
+async def _agent_analysis_runner(context: dict) -> list:
+    """
+    Agent analysis callback injected into the simulator.
+    Encapsulates all knowledge of the agents layer so the simulator
+    does not need to import it directly.
+    """
+    from .agents.graph import (
+        build_agent_graph, supervisor_node, intel_node, planner_node, commander_hitl_node
+    )
+    from .agents.models import AgentState, AgentRole
+
+    initial_state: AgentState = {
+        "agent_id": f"AEGIS-{int(time.time())}",
+        "role": AgentRole.SUPERVISOR,
+        "messages": [],
+        "bdi": {
+            "beliefs": {
+                "units": context["units"],
+                "is_jamming": context["is_jamming"],
+                "timestamp": context["timestamp"],
+            },
+            "desires": [],
+            "intentions": [],
+        },
+        "memory": {
+            "sensory_buffer": [],
+            "working_memory": {},
+            "episodic_memory": [],
+            "semantic_memory": {},
+        },
+        "current_plan": None,
+        "confidence": 0.5,
+        "reflection_count": 0,
+        "status": "INITIALIZING",
+    }
+
+    graph = build_agent_graph()
+    result = initial_state
+    node_funcs = [
+        ("supervisor", supervisor_node),
+        ("intel_analyst", intel_node),
+        ("tactical_planner", planner_node),
+        ("commander_hitl", commander_hitl_node),
+    ]
+    for node_name, node_fn in node_funcs:
+        update = await node_fn(result)
+        for key, value in update.items():
+            result[key] = value
+
+    # Extract reasoning entries from the last 4 messages (one per node)
+    reasoning_entries = []
+    for msg in result.get("messages", [])[-4:]:
+        reasoning_entries.append({
+            "role": msg.sender_id if hasattr(msg, "sender_id") else "SYSTEM",
+            "content": msg.content if hasattr(msg, "content") else str(msg),
+            "timestamp": time.time(),
+        })
+    return reasoning_entries
+
+
+# Shared simulator instance — agent runner injected to avoid architecture violation
+simulator = ScenarioSimulator(agent_runner=_agent_analysis_runner)
 
 
 @app.on_event("startup")
