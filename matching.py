@@ -6,10 +6,15 @@ Implements a 3-phase allocation engine:
   Phase 3: Fallback Pool for Admin
 """
 
+import logging
 from datetime import datetime, timezone
 
+from models import db, Student, Guide, Preference, Allocation, Notification, AuditLog
 
-def run_matching(db, Student, Guide, Preference, Allocation, Notification, AuditLog):
+logger = logging.getLogger(__name__)
+
+
+def run_matching():
     """
     Execute the full 3-phase matching algorithm.
     Returns a summary dict with statistics.
@@ -86,7 +91,7 @@ def run_matching(db, Student, Guide, Preference, Allocation, Notification, Audit
     unmatched_students = [s for s in students_with_prefs if s.id not in allocated_student_ids]
 
     if unmatched_students:
-        gale_shapley_results = _gale_shapley(unmatched_students, Guide.query.all(), db)
+        gale_shapley_results = _gale_shapley(unmatched_students, Guide.query.all())
 
         for student_id, guide_id in gale_shapley_results.items():
             student = db.session.get(Student, student_id)
@@ -183,7 +188,7 @@ def run_matching(db, Student, Guide, Preference, Allocation, Notification, Audit
     return stats
 
 
-def _gale_shapley(unmatched_students, all_guides, db):
+def _gale_shapley(unmatched_students, all_guides):
     """
     Run the Gale-Shapley algorithm for stable matching.
     Students propose to guides. Guides accept/reject based on applicant score.
@@ -219,9 +224,6 @@ def _gale_shapley(unmatched_students, all_guides, db):
     total_capacity = sum(guide.available_slots for guide in available_guides.values())
     max_iterations = len(free_students) * total_capacity * 10  # safety limit
     iteration = 0
-
-    import logging
-    logger = logging.getLogger(__name__)
 
     while free_students and iteration < max_iterations:
         iteration += 1

@@ -20,7 +20,7 @@ EXCLUSION_ZONE_KM = 5.0
 
 
 class ScenarioSimulator:
-    def __init__(self):
+    def __init__(self, agent_runner=None):
         self.units = []
         self.is_jamming = False
         self.last_update = time.time()
@@ -34,6 +34,9 @@ class ScenarioSimulator:
         # Agent reasoning log buffer (sent to frontend)
         self.reasoning_buffer: List[Dict] = []
         self.last_agent_run = 0  # Timestamp of last agent graph execution
+
+        # Optional injected agent analysis callback (inverts dependency on agents layer)
+        self._agent_runner = agent_runner
 
     def _initialize_scenario(self):
         """Initialize units in the Indian Ocean region (near Port Blair, Andaman Sea)."""
@@ -170,65 +173,23 @@ class ScenarioSimulator:
             unit["heading"] = angle_to_base + random.uniform(-15, 15)
 
     async def _run_agent_analysis(self):
-        """Execute the agent graph and buffer reasoning for the frontend."""
-        from .agents.graph import build_agent_graph
-        from .agents.models import AgentState, AgentRole, BDIMemory, MemoryLayer
+        """Execute the agent graph and buffer reasoning for the frontend.
+
+        Uses the injected _agent_runner callback so that the simulator layer
+        does not depend directly on the agents layer (architecture inversion).
+        """
+        if self._agent_runner is None:
+            return
 
         try:
-            initial_state: AgentState = {
-                "agent_id": f"AEGIS-{int(time.time())}",
-                "role": AgentRole.SUPERVISOR,
-                "messages": [],
-                "bdi": {
-                    "beliefs": {
-                        "units": self.units,
-                        "is_jamming": self.is_jamming,
-                        "timestamp": time.time()
-                    },
-                    "desires": [],
-                    "intentions": []
-                },
-                "memory": {
-                    "sensory_buffer": [],
-                    "working_memory": {},
-                    "episodic_memory": [],
-                    "semantic_memory": {}
-                },
-                "current_plan": None,
-                "confidence": 0.5,
-                "reflection_count": 0,
-                "status": "INITIALIZING"
+            context = {
+                "units": self.units,
+                "is_jamming": self.is_jamming,
+                "timestamp": time.time(),
             }
-
-            graph = build_agent_graph()
-            # Run the graph synchronously step by step
-            result = initial_state
-            for node_name in ["supervisor", "intel_analyst", "tactical_planner", "commander_hitl"]:
-                if node_name == "supervisor":
-                    from .agents.graph import supervisor_node
-                    update = await supervisor_node(result)
-                elif node_name == "intel_analyst":
-                    from .agents.graph import intel_node
-                    update = await intel_node(result)
-                elif node_name == "tactical_planner":
-                    from .agents.graph import planner_node
-                    update = await planner_node(result)
-                elif node_name == "commander_hitl":
-                    from .agents.graph import commander_hitl_node
-                    update = await commander_hitl_node(result)
-
-                # Merge update into result
-                for key, value in update.items():
-                    result[key] = value
-
-            # Extract reasoning from messages
-            messages = result.get("messages", [])
-            for msg in messages[-4:]:  # Last 4 messages (one per node)
-                self.reasoning_buffer.append({
-                    "role": msg.sender_id if hasattr(msg, "sender_id") else "SYSTEM",
-                    "content": msg.content if hasattr(msg, "content") else str(msg),
-                    "timestamp": time.time()
-                })
+            reasoning_entries = await self._agent_runner(context)
+            if reasoning_entries:
+                self.reasoning_buffer.extend(reasoning_entries)
 
             # Keep buffer manageable
             if len(self.reasoning_buffer) > 50:
